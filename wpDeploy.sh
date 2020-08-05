@@ -151,13 +151,14 @@ sqlpswd=$(openssl rand 39 -base64 | cut -c3-33)
 wpasswd=$(openssl rand 39 -base64 | cut -c10-30)
 wpapasswd=$(openssl rand 39 -base64 | cut -c15-37)
 mysql -e "create database wordpress"
-mysql -e "grant all on wordpress.* to wordpress@localhost identified by '${wpasswd}'"
+#mysql -e "grant all on wordpress.* to wordpress@localhost identified by '${wpasswd}'"
+mysql -e "CREATE USER 'wordpress'@'localhost'IDENTIFIED WITH mysql_native_password BY '${wpasswd}'"
+mysql -e "grant all on wordpress.* to wordpress@localhost"
 }
 
 mysql_lock_down () {
 # Lock down mysql
 # Make sure that NOBODY can access the server without a password
-mysql -e "UPDATE mysql.user SET Password = PASSWORD('${sqlpswd}') WHERE User = 'root'@'localhost'"
 
 # Kill the anonymous users
 mysql -e "DROP USER ''@'localhost'"
@@ -165,6 +166,11 @@ mysql -e "DROP USER ''@'localhost'"
 mysql -e "DROP USER ''@'$(hostname)'"
 # Kill off the demo database
 mysql -e "DROP DATABASE test"
+
+# update root user password
+#mysql -e "UPDATE mysql.user SET Password = PASSWORD('${sqlpswd}') WHERE User = 'root'@'localhost'"
+mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${sqlpswd}'"
+
 # Make our changes take effect
 mysql -e "FLUSH PRIVILEGES"
 }
@@ -176,7 +182,7 @@ pkgin -y in htop
 pkgin -y in nano
 pkgin -y in nginx
 #pkgin -y in mariadb-server-10
-pkgin -y in mysql-server-5.7.26nb2 mysql-client-5.7.26nb2
+pkgin -y in mysql-server mysql-client
 /usr/sbin/svcadm enable -r svc:/pkgsrc/mysql:default
 
 # Install PHP stuff
